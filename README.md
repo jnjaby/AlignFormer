@@ -39,7 +39,7 @@ This repository contains the implementation of the following paper:
 
 ## License and Acknowledgement
 
-This project is open sourced under MIT license. The code framework is mainly modified from [BasicSR](https://github.com/xinntao/BasicSR). Please refer to the original repo for more usage and documents.
+This project is open sourced under S-Lab license. The code framework is mainly modified from [BasicSR](https://github.com/xinntao/BasicSR). Please refer to the original repo for more usage and documents.
 
 
 ## Contact

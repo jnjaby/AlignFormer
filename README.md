@@ -39,7 +39,12 @@ This repository contains the implementation of the following paper:
 
 ## License and Acknowledgement
 
-This project is open sourced under S-Lab license. The code framework is mainly modified from [BasicSR](https://github.com/xinntao/BasicSR). Please refer to the original repo for more usage and documents.
+This project is licensed under .
+
+
+
+This project is open sourced under [NTU S-Lab License 1.0](https://github.com/jnjaby/AlignFormer/blob/main/LICENSE.md). Redistribution and use should follow this license.
+The code framework is mainly modified from [BasicSR](https://github.com/xinntao/BasicSR). Please refer to the original repo for more usage and documents.
 
 
 ## Contact

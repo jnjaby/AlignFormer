@@ -43,7 +43,7 @@ This project is licensed under .
 
 
 
-This project is open sourced under [NTU S-Lab License 1.0](https://github.com/jnjaby/AlignFormer/blob/main/LICENSE.md). Redistribution and use should follow this license.
+This project is open sourced under [NTU S-Lab License 1.0](https://github.com/jnjaby/AlignFormer/blob/main/LICENSE). Redistribution and use should follow this license.
 The code framework is mainly modified from [BasicSR](https://github.com/xinntao/BasicSR). Please refer to the original repo for more usage and documents.
 
 

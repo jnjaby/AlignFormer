@@ -9,6 +9,10 @@ This repository contains the implementation of the following paper:
 > Ruicheng Feng, Chongyi Li, Huaijin Chen, Shuai Li, Jinwei Gu, Chen Change Loy<br>
 > Computer Vision and Pattern Recognition (**CVPR**), 2023<br>
 
+[[Paper](https://arxiv.org/abs/2304.06019)]
+[[Project Page](https://jnjaby.github.io/projects/AlignFormer/)]
+
+
 **Coming soon.**
 
 

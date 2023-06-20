@@ -1,0 +1,61 @@
+name: AlignFormer_test
+folder_suffix: AlignFormer
+suffix: ~  # add suffix to saved images
+model_type: TTSRModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+datasets:
+  test:
+    name: test
+    type: TripleImageDataset
+    dataroot_gt: /mnt/lustre/rcfeng/UDC/dataset/iphone_pair_sub300/ref/test_sub/
+    dataroot_ref: /mnt/lustre/rcfeng/UDC/dataset/iphone_pair_sub300/ref/test_sub/
+    dataroot_lq: /mnt/lustre/rcfeng/UDC/dataset/iphone_pair_sub300/lq/test_sub/
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+
+# network structures
+network_g:
+  type: AlignFormer
+  feat_dim: 64
+  nhead: 4
+  mlp_ratio: 2
+  pos_en_flag: false
+  k_size: 5
+  # fuse_type: mask
+  attn_type: softmax
+  flow_type: raft
+  flow_model_path: experiments/pretrained_models/RAFT/raft-things.pth
+  flow_ft: false
+  # DA module
+  dam_flag: true
+  dam_ft: false
+  dam_feat: 64
+  dam_demodulate: true
+  dam_path: experiments/pretrained_models/163_CTM_f64_demod_ip300_cx_conv44/models/net_g_latest.pth
+  # main branch
+  main_ft: true
+
+
+# validation settings
+val:
+  save_img: true
+  save_npy: false
+  suffix: ~
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: true
+
+# path
+path:
+  pretrain_network_g: experiments/pretrained_models/AlignFormer.pth
+  strict_load_g: true
+  param_key_g: params_ema
+

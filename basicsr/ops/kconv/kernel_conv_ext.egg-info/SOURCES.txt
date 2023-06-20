@@ -1,0 +1,7 @@
+setup.py
+kernel_conv_ext.egg-info/PKG-INFO
+kernel_conv_ext.egg-info/SOURCES.txt
+kernel_conv_ext.egg-info/dependency_links.txt
+kernel_conv_ext.egg-info/top_level.txt
+src/KernelConv2D_cuda.cpp
+src/KernelConv2D_kernel.cu

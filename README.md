@@ -13,10 +13,66 @@ This repository contains the implementation of the following paper:
 [[Project Page](https://jnjaby.github.io/projects/AlignFormer/)]
 
 
-**Coming soon.**
+:star: Come and check our poster at `West Building Exhibit Halls ABC 083` on TUE-PM (20/06/2023)!
+:star: If you found this project helpful to your projects, please help star this repo. Thanks! :hugs: 
 
 
-## Citation
+## Update
+- **2022.06**: Release inference code of AlignFormer.
+- **2023.03**: This repo created!
+
+
+## Dependencies and Installation
+- Python >= 3.7 (Recommend to use [Anaconda](https://www.anaconda.com/download/#linux) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html))
+- Pytorch >= 1.7.1
+- [CUDA](https://developer.nvidia.com/cuda-downloads) >= 10.1
+- Other required packages in `requirements.txt`
+```
+# git clone this repository
+git clone https://github.com/jnjaby/AlignFormer.git
+cd AlignFormer
+
+# (Optional) create new anaconda env
+conda create -n alignformer python=3.8 -y
+conda activate AlignFormer
+
+# install python dependencies
+pip install -r requirements.txt
+python basicsr/setup.py develop
+```
+
+## Quick Inference
+
+We provide quick test code with the pretrained model. The testing command assumes using single GPU testing. Please see **[TrainTest.md](docs/TrainTest.md)** if you prefer using `slurm`.
+
+### Download Pre-trained Models:
+Download the pretrained models from [Google Drive](https://drive.google.com/file/d/1Llvsy9T_yRKM9fYXvA_Q2zfFUjYTEUJQ/view?usp=drive_link) to the `experiments/pretrained_models` folder.
+
+
+### Dataset Preparation:
+You can also grab the data directly from [GoogleDrive](https://drive.google.com/file/d/1Llvsy9T_yRKM9fYXvA_J2zfFUjYTEUJQ/view?usp=drive_link), unzip and put them into `./datasets`.
+
+
+### Testing:
+1. Modify the paths to dataset and pretrained model in the following yaml files for configuration.
+
+    ```bash
+    ./options/test/AlignFormer_test.yml
+    ```
+
+1. Run test code for **synthetic** data.
+
+    ```bash
+    python -u basicsr/test.py -opt "options/test/AlignFormer_test.yml" --launcher="none"
+    ```
+
+   Check out the results in `./results`.
+
+
+
+
+
+### Citation
 
    If you find our repo useful for your research, please consider citing our paper:
 
@@ -41,12 +97,12 @@ This repository contains the implementation of the following paper:
    ```
 
 
-## License and Acknowledgement
+### License and Acknowledgement
 
 This project is open sourced under [NTU S-Lab License 1.0](https://github.com/jnjaby/AlignFormer/blob/main/LICENSE). Redistribution and use should follow this license.
 The code framework is mainly modified from [BasicSR](https://github.com/xinntao/BasicSR). Please refer to the original repo for more usage and documents.
 
 
-## Contact
+### Contact
 
 If you have any question, please feel free to contact us via `ruicheng002@ntu.edu.sg`.

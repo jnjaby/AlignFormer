@@ -31,7 +31,6 @@ class SRModel(BaseModel):
         if load_path is not None:
             param_key = self.opt['path'].get('param_key_g', 'params')
             self.load_network(self.net_g, load_path, self.opt['path'].get('strict_load_g', True), param_key)
-            print(f'Loading model from {load_path}')
 
         self.gt_usm = opt.get('gt_usm', False)
         if self.gt_usm:

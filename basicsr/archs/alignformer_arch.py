@@ -396,12 +396,6 @@ def flow_guide_sampler(feat, vgrid_scaled, k_size=5, interp_mode='bilinear',
     return sample_feat
 
 
-# def zero_flow(src, ref):
-#     N, C, H, W = src.shape
-#     flow = torch.zeros((N, 2, H, W), dtype=src.dtype, device=src.device)
-#     return flow
-
-
 @ARCH_REGISTRY.register()
 class AlignFormer(nn.Module):
     def __init__(self,
@@ -416,11 +410,8 @@ class AlignFormer(nn.Module):
                  attn_type='softmax',
                  flow_type='pwc',
                  fuse_type=None,
-                 dam_flag=False,
                  **kwargs):
         super().__init__()
-
-        self.dam_flag = dam_flag
 
         if flow_type == 'spynet':
             from basicsr.archs.spynet_arch import FlowGenerator
@@ -432,22 +423,22 @@ class AlignFormer(nn.Module):
             from basicsr.archs.raft_arch import FlowGenerator
             self.flow_estimator = FlowGenerator(load_path=kwargs['flow_model_path'],
                                                 requires_grad=kwargs['flow_ft'])
-        # elif flow_type == 'zero':
-        #     self.flow_estimator = zero_flow
         else:
             raise ValueError(f'Unrecognized flow type: {self.flow_type}.')
 
-        if dam_flag:
-            if kwargs['dam_ft']:
-                assert kwargs['dam_path'] != None
-            from basicsr.archs.dam_arch import DAModule
-            self.DAM = DAModule(in_ch=src_ch, feat_ch=kwargs['dam_feat'], out_ch=src_ch,
-                                demodulate=kwargs['dam_demodulate'],
-                                load_path=kwargs['dam_path'], requires_grad=kwargs['dam_ft'])
+        # Define DAM.
+        if kwargs['dam_ft']:
+            assert kwargs['dam_path'] != None
+        from basicsr.archs.dam_arch import DAModule
+        self.DAM = DAModule(in_ch=src_ch, feat_ch=kwargs['dam_feat'], out_ch=src_ch,
+                            demodulate=kwargs['dam_demodulate'],
+                            load_path=kwargs['dam_path'], requires_grad=kwargs['dam_ft'])
 
+        # Define feature extractor.
         self.unet_q = Unet(src_ch, feat_dim, feat_dim)
         self.unet_k = Unet(ref_ch, feat_dim, feat_dim)
 
+        # Define GAM.
         self.trans_unit = nn.ModuleList([
             TransformerUnit(feat_dim, nhead, pos_en_flag, mlp_ratio, k_size, attn_type, fuse_type),
             TransformerUnit(feat_dim, nhead, pos_en_flag, mlp_ratio, k_size, attn_type, fuse_type),
@@ -459,7 +450,6 @@ class AlignFormer(nn.Module):
         self.conv3 = double_conv(feat_dim, feat_dim)
         self.conv4 = double_conv_up(feat_dim, feat_dim)
         self.conv5 = double_conv_up(feat_dim, feat_dim)
-
         self.conv6 = nn.Sequential(single_conv(feat_dim, feat_dim),
                                    nn.Conv2d(feat_dim, out_ch, 3, 1, 1))
 
@@ -485,8 +475,7 @@ class AlignFormer(nn.Module):
             src = F.pad(src, (0, W_pad, 0, H_pad), 'replicate')
             ref = F.pad(ref, (0, W_pad, 0, H_pad), 'replicate')
 
-        if self.dam_flag:
-            src = self.DAM(src, ref)
+        src = self.DAM(src, ref)
 
         # with torch.no_grad():
         #     flow = self.flow_estimator(src, ref).detach()
@@ -537,43 +526,23 @@ if __name__ == '__main__':
         mlp_ratio=2,
         k_size=5,
         attn_type='softmax',
-        fuse_type='mask',
         flow_type='raft',
         flow_model_path='../../experiments/pretrained_models/RAFT/raft-things.pth',
-        dam_flat=True,
+        flow_ft=False,
         dam_ft=False,
-        dam_feat=32,
-        dam_demodulte=True,
-        dam_path='../../experiments/FGTransformer/119_DAM_f32_demod_ip110_cx_conv44/models/net_g_latest.pth'
+        dam_feat=64,
+        dam_demodulate=True,
+        main_ft=True,
+        dam_path=None,
     ).cuda()
+    load_net = torch.load("../../experiments/pretrained_models/AlignFormer.pth", map_location=lambda storage, loc: storage)['params_ema']
+    pdb.set_trace()
+    model.load_state_dict(load_net, strict=True)
     print(model)
-
-    # import torch.autograd.profiler as profiler
 
     src = torch.randn((batch_size, 3, height, width)).cuda()
     ref = torch.randn((batch_size, 3, height, width)).cuda()
     mask = torch.randn((batch_size, 1, height, width)).cuda()
-    # model.eval()
-
-    # warm up
-    # for i in range(10):
-    #     out = model(src, ref)
 
     out = model(src, ref, mask)
-
-    # with profiler.profile(with_stack=True, profile_memory=True) as prof:
-    #     out = model(src, ref)
-
-    # print(prof.key_averages(group_by_stack_n=5).table(sort_by='self_cpu_time_total', row_limit=5))
-    # print(prof.key_averages(group_by_stack_n=5).table(sort_by="self_cuda_memory_usage", row_limit=10))
-
-    # with torch.no_grad():
-    #     out = model(src, ref)
-    # model.train()
-    # pdb.set_trace()
-    # for k, v in model.named_parameters():
-    #     print(k, v.requires_grad)
-
-    print('Max memory usage: {0:.4f} GB'.format(torch.cuda.max_memory_allocated() / 1e9))
-    print('Memory usage: {0:.4f} GB'.format(torch.cuda.memory_allocated() / 1e9))
     print(out.shape)

@@ -19,8 +19,9 @@ This repository contains the implementation of the following paper:
 
 
 ## Update
-- **2022.06**: Release inference code of AlignFormer.
-- **2023.03**: This repo created!
+- **2023.07**: Release training code of AlignFormer.
+- **2023.06**: Release inference code of AlignFormer.
+- **2023.03**: This repo is created!
 
 
 ## Dependencies and Installation
@@ -39,7 +40,7 @@ conda activate AlignFormer
 
 # install python dependencies
 pip install -r requirements.txt
-python basicsr/setup.py develop
+python setup.py develop
 ```
 
 ## Quick Inference
@@ -47,11 +48,27 @@ python basicsr/setup.py develop
 We provide quick test code with the pretrained model. The testing command assumes using single GPU testing. Please see **[TrainTest.md](docs/TrainTest.md)** if you prefer using `slurm`.
 
 ### Download Pre-trained Models:
-Download the pretrained models from [Google Drive](https://drive.google.com/file/d/1Llvsy9T_yRKM9fYXvA_Q2zfFUjYTEUJQ/view?usp=drive_link) to the `experiments/pretrained_models` folder.
+Download the pretrained models from [Google Drive](https://drive.google.com/drive/folders/1_2DR2BNp5rdCf-hm60K8fkV0t6KAlDOR?usp=sharing) to the `experiments/pretrained_models` folder.
 
 
 ### Dataset Preparation:
-You can also grab the data directly from [GoogleDrive](https://drive.google.com/file/d/1Llvsy9T_yRKM9fYXvA_J2zfFUjYTEUJQ/view?usp=drive_link), unzip and put them into `./datasets`.
+You can also grab the data directly from [GoogleDrive](https://drive.google.com/file/d/1Llvsy9T_yRKM9fYXvA_J2zfFUjYTEUJQ/view?usp=drive_link), unzip and put them into `./datasets`. Note that iamges in `AlignFormer` are the results of our pre-trained model.
+
+#### Dataset structure
+```
+├── AlignFormer
+│   ├── test_sub
+│   └── train
+├── lq
+│   ├── test_sub
+│   └── train
+├── mask
+│   ├── test_sub
+│   └── train
+└── ref
+    ├── test_sub
+    └── train
+```
 
 
 ### Testing:
@@ -61,7 +78,7 @@ You can also grab the data directly from [GoogleDrive](https://drive.google.com/
     ./options/test/AlignFormer_test.yml
     ```
 
-1. Run test code for **synthetic** data.
+1. Run test code for data.
 
     ```bash
     python -u basicsr/test.py -opt "options/test/AlignFormer_test.yml" --launcher="none"
@@ -69,6 +86,32 @@ You can also grab the data directly from [GoogleDrive](https://drive.google.com/
 
    Check out the results in `./results`.
 
+
+## Training models:
+
+To train an AlignFormer, you will need to train a DAM module first. Then you can merge the pre-trained DAM into AlignFormer and train the whole model.
+
+1. Prepare the datasets. Please refer to [`Dataset Preparation`](#dataset-preparation).
+
+1. Modify config files `./options/train/DAM_train.yml`.
+
+1. Run training code (*Slurm Training*). Kindly checkout **[TrainTest.md](docs/TrainTest.md)** and use single GPU training, distributed training, or slurm training as per your preference.
+
+   ```bash
+   srun -p [partition] --mpi=pmi2 --job-name=DAM --gres=gpu:2 --ntasks=2 --ntasks-per-node=2 --cpus-per-task=2 --kill-on-bad-exit=1 \
+   python -u basicsr/train.py -opt "options/train/DAM_train.yml" --launcher="slurm"
+   ```
+
+1. After training the DAM, modify config file of AlignFormer `./options/train/AlignFormer_train.yml`.
+
+1. Run training code (*Slurm Training*).
+
+   ```bash
+   srun -p [partition] --mpi=pmi2 --job-name=DAM --gres=gpu:2 --ntasks=2 --ntasks-per-node=2 --cpus-per-task=2 --kill-on-bad-exit=1 \
+   python -u basicsr/train.py -opt "options/train/AlignFormer_train.yml" --launcher="slurm"
+   ```
+
+All logging files in the training process, *e.g.*, log message, checkpoints, and snapshots, will be saved to `./experiments` directory.
 
 
 

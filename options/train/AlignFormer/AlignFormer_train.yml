@@ -1,0 +1,120 @@
+# general settings
+name: AlignFormer_train
+folder_suffix: AlignFormer
+model_type: TTSRModel
+scale: 1
+num_gpu: auto
+manual_seed: 10
+
+# dataset and data loader settings
+datasets:
+  train:
+    name: syn_pair_train
+    type: TripleImageDataset
+    dataroot_gt: datasets/iphone_dataset/ref/train/
+    dataroot_ref: datasets/iphone_dataset/ref/train/
+    dataroot_lq: datasets/iphone_dataset/lq/train/
+    meta_info_file: ~
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+    gt_size: 256
+    use_flip: true
+    use_rot: true
+
+    # data loader
+    use_shuffle: true
+    num_worker_per_gpu: 4
+    batch_size_per_gpu: 4
+    dataset_enlarge_ratio: 10
+    prefetch_mode: ~
+
+  val:
+    name: syn_pair_val
+    type: TripleImageDataset
+    dataroot_gt: datasets/iphone_dataset/ref/test_sub/
+    dataroot_ref: datasets/iphone_dataset/ref/test_sub/
+    dataroot_lq: datasets/iphone_dataset/lq/test_sub/
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+# network structures
+network_g:
+  type: AlignFormer
+  feat_dim: 64
+  nhead: 4
+  mlp_ratio: 2
+  pos_en_flag: false
+  k_size: 5
+  attn_type: softmax
+  flow_type: raft
+  flow_model_path: experiments/pretrained_models/RAFT/raft-things.pth
+  flow_ft: false
+  # DA module
+  dam_flag: true
+  dam_ft: false
+  dam_feat: 64
+  dam_demodulate: true
+  dam_path: experiments/AlignFormer/DAM_train/models/net_g_10000.pth
+  # main branch
+  main_ft: true
+
+
+# path
+path:
+  pretrain_network_g: ~
+  strict_load_g: true
+  resume_state: ~
+
+# training settings
+train:
+  ema_decay: 0.999
+  optim_g:
+    type: Adam
+    lr: !!float 2e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
+
+  scheduler:
+    type: MultiStepLR
+    milestones: [250000, 300000]
+    gamma: 0.5
+
+  total_iter: 400000
+  warmup_iter: -1  # no warm up
+
+  # losses
+  pixel_opt:
+    type: ContextualLoss
+    band_width: !!float 0.5
+    vgg_layer: conv4_4
+    loss_type: cosine
+    loss_weight: !!float 1.0
+    reduction: mean
+
+# validation settings
+val:
+  val_freq: !!float 1e4
+  save_img: true
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: false
+
+# logging settings
+logger:
+  print_freq: 100
+  save_checkpoint_freq: !!float 1e4
+  use_tb_logger: true
+  wandb:
+    project: ~
+    resume_id: ~
+
+# dist training settings
+dist_params:
+  backend: nccl
+  port: 29165

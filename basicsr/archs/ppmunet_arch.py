@@ -211,39 +211,11 @@ class BasicBlock_D(nn.Module):
         return out
 
 
-# Channel Attention (CA) Layer
-class CurveCALayer(nn.Module):
-    def __init__(self, channel, n_curve):
-        super(CurveCALayer, self).__init__()
-        self.n_curve = n_curve
-        self.relu = nn.ReLU(inplace=False)
-        self.predict_a = nn.Sequential(
-            nn.Conv2d(channel, channel, 5, stride=1, padding=2), nn.ReLU(inplace=True),
-            nn.Conv2d(channel, channel, 3, stride=1, padding=1), nn.ReLU(inplace=True),
-            nn.Conv2d(channel, n_curve, 1, stride=1, padding=0),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        # clip the input features into range of [0,1]
-        a = self.predict_a(x)
-        x = self.relu(x) - self.relu(x - 1)
-        for i in range(self.n_curve):
-            x = x + a[:, i:i + 1] * x * (1 - x)
-
-        return x
-
-
 @ARCH_REGISTRY.register()
-class LEDNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=3, ppm=True, fac=False,
-                 skip=False, curve=False, side_loss=False):
-        super(LEDNet, self).__init__()
+class PPMUNet(nn.Module):
+    def __init__(self, in_channels=3, out_channels=3, ppm=True,):
+        super(PPMUNet, self).__init__()
         self.ppm = ppm
-        self.fac = fac
-        self.curve = curve
-        self.side_loss = side_loss
-        self.skip = skip
 
         # ch1, ch2, ch3, ch4 = 32, 64, 128, 256
         ch1, ch2, ch3, ch4 = 32, 64, 128, 128
@@ -258,41 +230,8 @@ class LEDNet(nn.Module):
             self.PPM2 = PPM(ch3, ch3 // 4, bins=(1, 2, 3, 6))
             self.PPM3 = PPM(ch4, ch4 // 4, bins=(1, 2, 3, 6))
 
-        # curve CA
-        if self.curve:
-            self.curve_n = 3
-            self.conv_1c = CurveCALayer(ch2, self.curve_n)
-            self.conv_2c = CurveCALayer(ch3, self.curve_n)
-            self.conv_3c = CurveCALayer(ch4, self.curve_n)
-
-        if self.side_loss:
-            self.side_out = nn.Conv2d(ch4, out_channels, 3, stride=1, padding=1)
-
         self.M_block1 = BasicBlock(ch4, ch4)
         self.M_block2 = BasicBlock(ch4, ch4)
-
-        # dynamic filter
-        if self.fac:
-            ks_2d = 5
-            self.conv_fac_k3 = nn.Sequential(
-                nn.Conv2d(ch4, ch4, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch4, ch4, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch4, ch4, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch4, ch4 * ks_2d**2, 1, stride=1))
-
-            self.conv_fac_k2 = nn.Sequential(
-                nn.Conv2d(ch3, ch3, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch3, ch3, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch3, ch3, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch3, ch3 * ks_2d**2, 1, stride=1))
-
-            self.conv_fac_k1 = nn.Sequential(
-                nn.Conv2d(ch2, ch2, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch2, ch2, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch2, ch2, 3, stride=1, padding=1), nn.ReLU(),
-                nn.Conv2d(ch2, ch2 * ks_2d**2, 1, stride=1))
-
-            self.kconv_deblur = KernelConv2D(ksize=ks_2d, act=True)
 
         self.D_block3 = BasicBlock_D(ch4, ch4)
         self.D_block2 = BasicBlock_D(ch4, ch3, mode='up')
@@ -315,24 +254,14 @@ class LEDNet(nn.Module):
         e_feat1 = self.E_block1(x)  # 64 1/2
         if self.ppm:
             e_feat1 = self.PPM1(e_feat1)
-        if self.curve:
-            e_feat1 = self.conv_1c(e_feat1)
 
         e_feat2 = self.E_block2(e_feat1)  # 128 1/4
         if self.ppm:
             e_feat2 = self.PPM2(e_feat2)
-        if self.curve:
-            e_feat2 = self.conv_2c(e_feat2)
 
         e_feat3 = self.E_block3(e_feat2)  # 256 1/8
         if self.ppm:
             e_feat3 = self.PPM3(e_feat3)
-        if self.curve:
-            e_feat3 = self.conv_3c(e_feat3)
-
-        # pdb.set_trace()
-        if self.side_loss:
-            out_side = self.side_out(e_feat3)
 
         # Mid
         m_feat = self.M_block1(e_feat3)
@@ -340,44 +269,28 @@ class LEDNet(nn.Module):
 
         # Decoder
         d_feat3 = self.D_block3(m_feat)  # 256 1/8
-        if self.fac:
-            kernel_3 = self.conv_fac_k3(e_feat3)
-            d_feat3 = self.kconv_deblur(d_feat3, kernel_3)
-        elif self.skip:
-            d_feat3 = d_feat3 + e_feat3
+        d_feat3 = d_feat3 + e_feat3
 
         d_feat2 = self.D_block2(d_feat3)  # 128 1/4
-        if self.fac:
-            kernel_2 = self.conv_fac_k2(e_feat2)
-            d_feat2 = self.kconv_deblur(d_feat2, kernel_2)
-        elif self.skip:
-            d_feat2 = d_feat2 + e_feat2
+        d_feat2 = d_feat2 + e_feat2
 
         d_feat1 = self.D_block1(d_feat2)  # 64 1/4
-        if self.fac:
-            kernel_1 = self.conv_fac_k1(e_feat1)
-            d_feat1 = self.kconv_deblur(d_feat1, kernel_1)
-        elif self.skip:
-            d_feat1 = d_feat1 + e_feat1
+        d_feat1 = d_feat1 + e_feat1
 
         out = self.D_block0(d_feat1)
 
         if not self.training:
             out = out[:, :, :H, :W]
 
-        if self.side_loss:
-            return out_side, out
-        else:
-            return out
+        return out
 
 
 if __name__ == '__main__':
     height = 128
     width = 128
-    model = LEDNet(
+    model = PPMUNet(
         ppm=True,
-        fac=False,
-        curve=True)
+        )
     print(model)
 
     src = torch.randn((2, 3, height, width))

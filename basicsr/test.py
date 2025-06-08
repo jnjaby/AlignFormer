@@ -1,7 +1,7 @@
 import logging
 import torch
 from os import path as osp
-from torchsummaryX import summary
+# from torchsummaryX import summary
 
 from basicsr.data import build_dataloader, build_dataset
 from basicsr.models import build_model

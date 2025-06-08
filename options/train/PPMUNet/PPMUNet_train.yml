@@ -1,18 +1,19 @@
 # general settings
-name: debug_DAM_train
+name: PPMUNet_train
 folder_suffix: AlignFormer
-model_type: TTSRModel
+model_type: PatchGANModel
 scale: 1
 num_gpu: auto
-manual_seed: 10
+manual_seed: 123
 
+gt_usm: false
 # dataset and data loader settings
 datasets:
   train:
     name: syn_pair_train
     type: TripleImageDataset
-    dataroot_gt: datasets/iphone_dataset/ref/train/
-    dataroot_ref: datasets/iphone_dataset/ref/train/
+    dataroot_gt: datasets/iphone_dataset/output_165/train/
+    dataroot_ref: datasets/iphone_dataset/mask/train/
     dataroot_lq: datasets/iphone_dataset/lq/train/
     meta_info_file: ~
     filename_tmpl: '{}'
@@ -32,26 +33,31 @@ datasets:
 
   val:
     name: syn_pair_val
-    type: TripleImageDataset
-    dataroot_gt: datasets/iphone_dataset/ref/test_sub/
-    dataroot_ref: datasets/iphone_dataset/ref/test_sub/
+    type: PairedImageDataset
+    dataroot_gt: datasets/iphone_dataset/output_165/test_sub/
     dataroot_lq: datasets/iphone_dataset/lq/test_sub/
     filename_tmpl: '{}'
     io_backend:
       type: disk
 
+# PatchGAN setting
+conditional: true
+
 # network structures
 network_g:
-  type: DAModule
-  in_ch: 3
-  feat_ch: 64
-  out_ch: 3
-  demodulate: true
-  requires_grad: true
+  type: PPMUNet
+  in_channels: 3
+  out_channels: 3
+  ppm: true
+network_d:
+  type: PatchDiscriminator
+  num_in_ch: 6
+  num_feat: 64
+  rf_size: 36
 
 # path
 path:
-  pretrain_network_g: ~
+  pretrain_network_g: experiments/FGTransformer/099_s2_LEDNet_PPM_skip_LQ-165(occ_mask)_vgg(conv22)/models/net_g_400000.pth
   strict_load_g: true
   resume_state: ~
 
@@ -63,23 +69,40 @@ train:
     lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
+  optim_d:
+    type: Adam
+    lr: !!float 1e-4
+    weight_decay: 0
+    betas: [0.9, 0.99]
 
   scheduler:
     type: MultiStepLR
-    milestones: [250000, 400000, 450000, 475000]
-    gamma: 0.5
+    milestones: [100000, 150000]
+    gamma: 0.1
 
-  total_iter: 500000
+  total_iter: 200000
   warmup_iter: -1  # no warm up
 
-  # losses
   pixel_opt:
-    type: ContextualLoss
-    band_width: !!float 0.5
-    vgg_layer: conv4_4
-    loss_type: cosine
-    loss_weight: !!float 1.0
+    type: L1Loss
+    loss_weight: !!float 1e-2
     reduction: mean
+  perceptual_opt:
+    type: PerceptualLoss
+    layer_weights:
+      'conv2_2': 1  # before relu
+    vgg_type: vgg19
+    use_input_norm: true
+    range_norm: false
+    perceptual_weight: !!float 1.0
+    style_weight: 0
+    criterion: l1
+  gan_opt:
+    type: GANLoss
+    gan_type: vanilla
+    real_label_val: 1.0
+    fake_label_val: 0.0
+    loss_weight: !!float 5e-3
 
 # validation settings
 val:
@@ -104,4 +127,4 @@ logger:
 # dist training settings
 dist_params:
   backend: nccl
-  port: 29163
+  port: 29214

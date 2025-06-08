@@ -1,0 +1,44 @@
+name: PPMUNet_test
+folder_suffix: AlignFormer
+suffix: ~  # add suffix to saved images
+model_type: SRModel
+scale: 1
+num_gpu: 1
+manual_seed: 10
+
+datasets:
+  test:
+    name: test_sub
+    type: PairedImageDataset
+    dataroot_gt: datasets/iphone_dataset/AlignFormer/test_sub/
+    dataroot_lq: datasets/iphone_dataset/lq/test_sub/
+    filename_tmpl: '{}'
+    io_backend:
+      type: disk
+
+
+# network structures
+network_g:
+  type: PPMUNet
+  in_channels: 3
+  out_channels: 3
+  ppm: true
+
+# validation settings
+val:
+  save_img: true
+  save_npy: false
+  suffix: ~
+
+  metrics:
+    psnr: # metric name, can be arbitrary
+      type: calculate_psnr
+      crop_border: 0
+      test_y_channel: true
+
+# path
+path:
+  pretrain_network_g: experiments/pretrained_models/PPMUNet.pth
+  strict_load_g: true
+  param_key_g: params_ema
+

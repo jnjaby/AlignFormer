@@ -19,6 +19,7 @@ This repository contains the implementation of the following paper:
 
 
 ## Update
+- **2025.05**: Release training and inference code of PPMUNet.
 - **2023.07**: Release training code of AlignFormer.
 - **2023.06**: Release inference code of AlignFormer.
 - **2023.03**: This repo is created!
@@ -78,7 +79,7 @@ You can also grab the data directly from [GoogleDrive](https://drive.google.com/
     ./options/test/AlignFormer_test.yml
     ```
 
-1. Run test code for data.
+1. Run test code for data (AlignFormer).
 
     ```bash
     python -u basicsr/test.py -opt "options/test/AlignFormer_test.yml" --launcher="none"
@@ -86,23 +87,31 @@ You can also grab the data directly from [GoogleDrive](https://drive.google.com/
 
    Check out the results in `./results`.
 
+1. Run test code for PPMUNet.
+
+    ```bash
+    python -u basicsr/test.py -opt "options/test/PPMUNet_test.yml" --launcher="none"
+    ```
+
+   Check out the results in `./results`.
 
 ## Training models:
+### Training AlignFormer:
 
 To train an AlignFormer, you will need to train a DAM module first. Then you can merge the pre-trained DAM into AlignFormer and train the whole model.
 
 1. Prepare the datasets. Please refer to [`Dataset Preparation`](#dataset-preparation).
 
-1. Modify config files `./options/train/DAM_train.yml`.
+1. Modify config files `./options/train/AlignFormer/DAM_train.yml`.
 
 1. Run training code (*Slurm Training*). Kindly checkout **[TrainTest.md](docs/TrainTest.md)** and use single GPU training, distributed training, or slurm training as per your preference.
 
    ```bash
    srun -p [partition] --mpi=pmi2 --job-name=DAM --gres=gpu:2 --ntasks=2 --ntasks-per-node=2 --cpus-per-task=2 --kill-on-bad-exit=1 \
-   python -u basicsr/train.py -opt "options/train/DAM_train.yml" --launcher="slurm"
+   python -u basicsr/train.py -opt "options/train/AlignFormer/DAM_train.yml" --launcher="slurm"
    ```
 
-1. After training the DAM, modify config file of AlignFormer `./options/train/AlignFormer_train.yml`.
+1. After training the DAM, modify config file of AlignFormer `./options/train/AlignFormer/AlignFormer_train.yml`.
 
 1. Run training code (*Slurm Training*).
 
@@ -113,6 +122,18 @@ To train an AlignFormer, you will need to train a DAM module first. Then you can
 
 All logging files in the training process, *e.g.*, log message, checkpoints, and snapshots, will be saved to `./experiments` directory.
 
+### Training PPMUNet:
+
+1. Modify config files `./options/train/PPMUNet/PPMUNet_train.yml`.
+
+1. Run training code (*Slurm Training*). Kindly checkout **[TrainTest.md](docs/TrainTest.md)** and use single GPU training, distributed training, or slurm training as per your preference.
+
+   ```bash
+   srun -p [partition] --mpi=pmi2 --job-name=PPMUNet --gres=gpu:2 --ntasks=2 --ntasks-per-node=2 --cpus-per-task=2 --kill-on-bad-exit=1 \
+   python -u basicsr/train.py -opt "options/train/PPMUNet/PPMUNet_train.yml" --launcher="slurm"
+   ```
+
+All logging files in the training process, *e.g.*, log message, checkpoints, and snapshots, will be saved to `./experiments` directory.
 
 
 

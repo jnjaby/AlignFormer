@@ -21,6 +21,7 @@ version.py
 *.gif
 *.pth
 *.zip
+*.pyc
 
 # template
 
